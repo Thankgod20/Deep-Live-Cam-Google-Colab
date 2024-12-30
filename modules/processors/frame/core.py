@@ -38,6 +38,7 @@ def get_frame_processors_modules(frame_processors: List[str]) -> List[ModuleType
             frame_processor_module = load_frame_processor_module(frame_processor)
             FRAME_PROCESSORS_MODULES.append(frame_processor_module)
     set_frame_processors_modules_from_ui(frame_processors)
+    print("frame_processors",frame_processors)
     return FRAME_PROCESSORS_MODULES
 
 def set_frame_processors_modules_from_ui(frame_processors: List[str]) -> None:
@@ -71,3 +72,15 @@ def process_video(source_path: str, frame_paths: list[str], process_frames: Call
     with tqdm(total=total, desc='Processing', unit='frame', dynamic_ncols=True, bar_format=progress_bar_format) as progress:
         progress.set_postfix({'execution_providers': modules.globals.execution_providers, 'execution_threads': modules.globals.execution_threads, 'max_memory': modules.globals.max_memory})
         multi_process_frame(source_path, frame_paths, process_frames, progress)
+
+def multi_sq_process_frame(source_path: str, temp_frame_paths: List[str], process_frames: Callable[[str, List[str], Any], None], progress: Any = None) -> None:
+    for path in temp_frame_paths:
+        process_frames(source_path, [path], progress)
+        print([path])
+
+def remote_process_video(source_path: str, frame_paths: list[str], process_frames: Callable[[str, List[str], Any], None]) -> None:
+    progress_bar_format = '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
+    total = len(frame_paths)
+    with tqdm(total=total, desc='Processing', unit='frame', dynamic_ncols=True, bar_format=progress_bar_format) as progress:
+        progress.set_postfix({'execution_providers': modules.globals.execution_providers, 'execution_threads': modules.globals.execution_threads, 'max_memory': modules.globals.max_memory})
+        multi_sq_process_frame(source_path, frame_paths, process_frames, progress)

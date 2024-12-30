@@ -31,3 +31,7 @@ webcam_preview_running = False
 push_addr = None
 pull_addr = None
 push_addr_two = None
+gof = '15'
+bitrate='800k'
+maxrate='800k'
+bufsize='800k'

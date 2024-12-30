@@ -5,6 +5,7 @@ import numpy as np
 import threading
 import time
 import io
+import modules.processors.frame.core
 from tqdm import tqdm
 from modules.typing import Face, Frame
 from typing import Any,List
@@ -50,8 +51,8 @@ def process_frame(source_frame: Frame, temp_frame: Frame)-> Frame:
 
     return temp_framex
 def send_data(sender: zmq.Socket, face_bytes: bytes, metadata: dict, address: str) -> None:
-    chunk_size = 1024*100
-    total_chunk = len(face_bytes) // chunk_size + 1
+    chunk_size = max(1, len(face_bytes) // 10)  #1024*100
+    total_chunk = (len(face_bytes) + chunk_size - 1) // chunk_size #len(face_bytes) // chunk_size + 1
     new_metadata = {'total_chunk': total_chunk}
     metadata.update(new_metadata)
     # Send metadata first
@@ -73,7 +74,7 @@ def send_data(sender: zmq.Socket, face_bytes: bytes, metadata: dict, address: st
     # Wait for the final reply
     final_reply_message = sender.recv_string()
     print(f"Received final reply: {final_reply_message}")
-
+#client.py
 def send_source_frame(source_face: Frame)-> None:
     sender = push_socket(modules.globals.push_addr)
     source_face_bytes = source_face.tobytes()
@@ -105,6 +106,7 @@ def receive_processed_frame(output_queue: queue.Queue)-> None:
         meta_data_json = pull_socket_.recv_json()
         print(meta_data_json)
         total_chunk = meta_data_json['total_chunk']
+        #num_data = meta_data_json['datasize']
         # Send acknowledgment for metadata
         pull_socket_.send_string("ACK")
         # Receive the array bytes
@@ -126,6 +128,7 @@ def receive_processed_frame(output_queue: queue.Queue)-> None:
         source_array = np.frombuffer(source_array_bytes, dtype=np.dtype(meta_data_json['dtype_source'])).reshape(meta_data_json['shape_source'])
 
         output_queue.put(source_array)  
+       
         break
 def send_streams(cap: VideoCapture) -> subprocess.Popen[bytes]:
     
@@ -143,10 +146,10 @@ def send_streams(cap: VideoCapture) -> subprocess.Popen[bytes]:
         
         #'-flags', 'low_delay',
         #'-rtbufsize', '100M',
-        '-g', '15',  # GOP size set to 1 to make each frame a keyframe
-        '-b:v', '800k',  # Set bitrate to 1 Mbps
-        '-maxrate', '800k',  
-        '-bufsize', '800k',
+        '-g', modules.globals.gof,#'15',  # GOP size set to 1 to make each frame a keyframe
+        '-b:v', modules.globals.bitrate,#'800k',  # Set bitrate to 1 Mbps
+        '-maxrate', modules.globals.maxrate,#'800k',  
+        '-bufsize', modules.globals.bufsize,#'800k',
         '-f', 'mpegts', modules.globals.push_addr_two #'tcp://127.0.0.1:5552'
     ]
 
@@ -231,19 +234,36 @@ def swap_frame_face_remote(source_frame: Frame,temp_frame: Frame) -> Frame:
 
 
 def process_frames(source_path: str, temp_frame_paths: List[str], progress: Any = None) -> None:
+    source_frame = cv2.imread(source_path)
+    frames = []
     for temp_frame_path in temp_frame_paths:
         temp_frame = cv2.imread(temp_frame_path)
-        result = process_frame(None, temp_frame)
-        cv2.imwrite(temp_frame_path, result)
+        frames.append(temp_frame)
+        ''' 
+        try:
+            result = process_frame(source_frame, temp_frame)
+            cv2.imwrite(temp_frame_path, result)
+        except Exception as exception:
+            print(exception)
+            pass'''
         if progress:
             progress.update(1)
-
+    # Convert list of frames into a 4D NumPy array
+    temp_frame = np.stack(frames, axis=0)
+    print("Video Dimentsion",temp_frame.ndim,temp_frame.shape)
+    result = process_frame(source_frame, temp_frame)
+    print("Video Dimension result",result.shape)
+    for i,frame in enumerate(result):
+        print(f"write to {temp_frame_paths[i]}" )
+        cv2.imwrite(temp_frame_paths[i], frame)
 
 def process_image(source_path: str, target_path: str, output_path: str) -> None:
+    source_frame = cv2.imread(source_path)
     target_frame = cv2.imread(target_path)
-    result = process_frame(None, target_frame)
+    result = process_frame(source_frame, target_frame)
     cv2.imwrite(output_path, result)
 
 
 def process_video(source_path: str, temp_frame_paths: List[str]) -> None:
-    modules.processors.frame.core.process_video(None, temp_frame_paths, process_frames)
+    #modules.processors.frame.core.remote_process_video(source_path, temp_frame_paths, process_frames)
+    process_frames(source_path, temp_frame_paths)

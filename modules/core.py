@@ -194,15 +194,24 @@ def start() -> None:
         from modules.predicter import predict_video
         if predict_video(modules.globals.target_path):
             destroy()
+    print("modules.globals.frame_processors",modules.globals.frame_processors)
     update_status('Creating temp resources...')
     create_temp(modules.globals.target_path)
     update_status('Extracting frames...')
     extract_frames(modules.globals.target_path)
     temp_frame_paths = get_temp_frame_paths(modules.globals.target_path)
-    for frame_processor in get_frame_processors_modules(modules.globals.frame_processors):
-        update_status('Progressing...', frame_processor.NAME)
-        frame_processor.process_video(modules.globals.source_path, temp_frame_paths)
-        release_resources()
+
+    if 'remote_processor' in modules.globals.frame_processors :
+        for frame_processor in get_frame_processors_modules(modules.globals.frame_processors):
+            print("Procesor Name",frame_processor.__name__)
+            if frame_processor.__name__ =="modules.processors.frame.remote_processor":
+                update_status('Progressing...', frame_processor.NAME)
+                frame_processor.process_video(modules.globals.source_path, temp_frame_paths)
+    else:
+        for frame_processor in get_frame_processors_modules(modules.globals.frame_processors):
+            update_status('Progressing...', frame_processor.NAME)
+            frame_processor.process_video(modules.globals.source_path, temp_frame_paths)
+            release_resources()
     # handles fps
     if modules.globals.keep_fps:
         update_status('Detecting fps...')

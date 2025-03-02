@@ -15,6 +15,7 @@ temp/
 .venv/
 venv/
 env/
+googdeep/
 workflow/
 workenv/
 gfpgan/

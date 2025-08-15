@@ -22,7 +22,8 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Free disk space
+      - name: Free disk space (Linux/macOS only)
+        if: runner.os != 'Windows'
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc

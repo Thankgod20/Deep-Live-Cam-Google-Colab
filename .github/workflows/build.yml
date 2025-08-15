@@ -3,8 +3,8 @@ name: Build Deep Live Cam Executables
 on:
   push:
     tags:
-      - "v*"   # runs only when you push version tags like v1.0, v2.0
-  workflow_dispatch:  # allow manual runs from GitHub UI
+      - "v*"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -22,6 +22,9 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Verify Python version
+        run: python --version
+
       - name: Free disk space (Linux/macOS only)
         if: runner.os != 'Windows'
         run: |
@@ -29,7 +32,6 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/hostedtoolcache
-          echo "Disk space after cleanup:"
           df -h
 
       - name: Install dependencies

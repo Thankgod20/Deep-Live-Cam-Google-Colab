@@ -10,7 +10,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, macos-latest] # removed ubuntu-latest
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -25,8 +25,9 @@ jobs:
       - name: Verify Python version
         run: python --version
 
-      - name: Free disk space (Linux/macOS only)
-        if: runner.os != 'Windows'
+      # Remove Linux/macOS disk cleanup since Ubuntu is gone
+      - name: Free disk space (macOS only)
+        if: runner.os == 'macOS'
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc

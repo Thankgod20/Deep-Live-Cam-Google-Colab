@@ -6,11 +6,14 @@ on:
       - "v*"
   workflow_dispatch:
 
+permissions:
+  contents: write   # 👈 required for creating/uploading releases
+
 jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, macos-latest] # removed ubuntu-latest
+        os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -25,7 +28,6 @@ jobs:
       - name: Verify Python version
         run: python --version
 
-      # Remove Linux/macOS disk cleanup since Ubuntu is gone
       - name: Free disk space (macOS only)
         if: runner.os == 'macOS'
         run: |
@@ -56,3 +58,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: dist/*
+          generate_release_notes: true  # 👈 auto-generate release if missing

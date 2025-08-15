@@ -30,7 +30,7 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller --onefile --add-data "models/*:models" run.py
+          pyinstaller --onefile run.py
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
